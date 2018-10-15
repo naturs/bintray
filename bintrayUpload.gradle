@@ -145,9 +145,11 @@ install {
     }
 }
 
-dokka {
-    outputFormat = 'html'
-    outputDirectory = "$buildDir/javadoc"
+if (isKotlinLibrary) {
+    dokka {
+        outputFormat = 'html'
+        outputDirectory = "$buildDir/javadoc"
+    }
 }
 
 if (isAndroidLibrary) { // Android libraries

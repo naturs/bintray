@@ -1,0 +1,224 @@
+// https://github.com/shaohui10086/ShareUtil/blob/master/shareutil/bintrayUpload.gradle
+// https://medium.com/bcgdv-engineering/how-to-publish-a-kotlin-android-library-to-jcenter-1f1875633ece
+
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+
+def isAndroidLibrary = project.plugins.hasPlugin('com.android.library')
+def isKotlinLibrary = project.hasProperty('kotlin')
+if (isKotlinLibrary) {
+    if (isAndroidLibrary) {
+        apply plugin: 'org.jetbrains.dokka-android'
+    } else {
+        apply plugin: 'org.jetbrains.dokka'
+    }
+}
+
+// load properties
+Properties properties = new Properties()
+File localPropertiesFile = rootProject.file("local.properties")
+if(localPropertiesFile.exists()){
+    properties.load(localPropertiesFile.newDataInputStream())
+}
+
+def PROJECT_NAME = 'PROJECT_NAME'
+def PROJECT_GROUP_ID = 'PROJECT_GROUP_ID'
+def PROJECT_ARTIFACT_ID = 'PROJECT_ARTIFACT_ID'
+def PROJECT_VERSION_NAME = 'PROJECT_VERSION_NAME'
+def PROJECT_DESCRIPTION = 'PROJECT_DESCRIPTION'
+def PROJECT_PACKAGING = 'PROJECT_PACKAGING'
+def PROJECT_SITE_URL = 'PROJECT_SITE_URL'
+def PROJECT_GIT_URL = 'PROJECT_GIT_URL'
+def PROJECT_ISSUE_TRACKER = 'PROJECT_ISSUE_TRACKER'
+def PROJECT_JAVA_DOC_NAME = 'PROJECT_JAVA_DOC_NAME'
+
+def DEVELOPER_ID = 'DEVELOPER_ID'
+def DEVELOPER_NAME = 'DEVELOPER_NAME'
+def DEVELOPER_EMAIL = 'DEVELOPER_EMAIL'
+
+def BINTRAY_USER = 'BINTRAY_USER'
+def BINTRAY_API_KEY = 'BINTRAY_API_KEY'
+
+// read properties
+def projectName = ''
+def projectGroupId = ''
+def projectArtifactId = ''
+def projectVersionName = ''
+def projectDescription = ''
+
+def projectPackaging = ''
+def projectSiteUrl = ''
+def projectGitUrl = ''
+def projectIssueTracker = ''
+
+def javadocName = ''
+
+def developerId = ''
+def developerName = ''
+def developerEmail = ''
+
+def bintrayUser = ''
+def bintrayApikey = ''
+
+projectName = project.findProperty(PROJECT_NAME) ?: rootProject.findProperty(PROJECT_NAME) ?: project.name
+projectGroupId = project.findProperty(PROJECT_GROUP_ID) ?: rootProject.findProperty(projectGroupId)
+projectArtifactId = project.findProperty(PROJECT_ARTIFACT_ID) ?: rootProject.findProperty(PROJECT_ARTIFACT_ID) ?: project.name
+projectVersionName = project.findProperty(PROJECT_VERSION_NAME) ?: rootProject.findProperty(PROJECT_VERSION_NAME) ?: android.defaultConfig.versionName
+javadocName = project.findProperty(PROJECT_JAVA_DOC_NAME) ?: rootProject.findProperty(PROJECT_JAVA_DOC_NAME) ?: properties.getProperty(PROJECT_JAVA_DOC_NAME) ?: project.name
+
+projectDescription = project.findProperty(PROJECT_DESCRIPTION) ?: rootProject.findProperty(PROJECT_DESCRIPTION) ?: properties.getProperty(PROJECT_DESCRIPTION)
+projectPackaging = project.findProperty(PROJECT_PACKAGING) ?: rootProject.findProperty(PROJECT_PACKAGING) ?: properties.getProperty(PROJECT_PACKAGING)
+projectSiteUrl = project.findProperty(PROJECT_SITE_URL) ?: rootProject.findProperty(PROJECT_SITE_URL) ?: properties.getProperty(PROJECT_SITE_URL)
+projectGitUrl = project.findProperty(PROJECT_GIT_URL) ?: rootProject.findProperty(PROJECT_GIT_URL) ?: properties.getProperty(PROJECT_GIT_URL)
+projectIssueTracker = project.findProperty(PROJECT_ISSUE_TRACKER) ?: rootProject.findProperty(PROJECT_ISSUE_TRACKER) ?: properties.getProperty(PROJECT_ISSUE_TRACKER)
+
+developerId = project.findProperty(DEVELOPER_ID) ?: rootProject.findProperty(DEVELOPER_ID) ?: properties.getProperty(DEVELOPER_ID)
+developerName = project.findProperty(DEVELOPER_NAME) ?: rootProject.findProperty(DEVELOPER_NAME) ?: properties.getProperty(DEVELOPER_NAME)
+developerEmail = project.findProperty(DEVELOPER_EMAIL) ?: rootProject.findProperty(DEVELOPER_EMAIL) ?: properties.getProperty(DEVELOPER_EMAIL)
+
+bintrayUser = project.findProperty(BINTRAY_USER) ?: rootProject.findProperty(BINTRAY_USER) ?: properties.getProperty(BINTRAY_USER)
+bintrayApikey = project.findProperty(BINTRAY_API_KEY) ?: rootProject.findProperty(BINTRAY_API_KEY) ?: properties.getProperty(BINTRAY_API_KEY)
+
+if (projectSiteUrl != null && projectSiteUrl.contains('github.com')) {
+    if (projectIssueTracker == null) {
+        projectIssueTracker = "${projectSiteUrl}/issues"
+    }
+    if (projectGitUrl == null) {
+        projectGitUrl = "${projectSiteUrl}.git"
+    }
+}
+
+println(""">>>>>>>>>> bintray upload config: 
+projectName: $projectName
+projectGroupId: $projectGroupId
+projectArtifactId: $projectArtifactId
+projectVersionName: $projectVersionName
+projectDescription: $projectDescription
+projectPackaging: $projectPackaging
+projectSiteUrl: $projectSiteUrl
+projectGitUrl: $projectGitUrl
+projectIssueTracker: $projectIssueTracker
+javadocName: $javadocName
+developerId: $developerId
+developerName: $developerName
+developerEmail: $developerEmail
+bintrayUser: $bintrayUser
+bintrayApikey: $bintrayApikey
+isKotlinLibrary: $isKotlinLibrary
+isAndroidLibrary: $isAndroidLibrary
+<<<<<<<<<<""")
+
+// Maven Group ID for the artifact
+group = projectGroupId
+
+// This generates POM.xml with proper parameters
+install {
+    repositories.mavenInstaller {
+        pom {
+            project {
+                name projectName
+                groupId projectGroupId
+                artifactId projectArtifactId
+                version projectVersionName
+                packaging projectPackaging
+                url projectSiteUrl
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id developerId
+                        name developerName
+                        email developerEmail
+                    }
+                }
+                scm {
+                    connection projectGitUrl
+                    developerConnection projectGitUrl
+                    url projectSiteUrl
+                }
+            }
+        }
+    }
+}
+
+dokka {
+    outputFormat = 'html'
+    outputDirectory = "$buildDir/javadoc"
+}
+
+if (isAndroidLibrary) { // Android libraries
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from android.sourceSets.main.java.srcDirs
+    }
+    if (isKotlinLibrary) { //Kotlin libraries
+        task javadoc(type: Javadoc, dependsOn: dokka) {
+            source = android.sourceSets.main.java.srcDirs
+            classpath += configurations.compile
+            classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+        }
+    } else {
+        task javadoc(type: Javadoc) {
+            source = android.sourceSets.main.java.srcDirs
+            classpath += configurations.compile
+            classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+        }
+    }
+} else { // Java libraries
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+    if (isKotlinLibrary) {
+        task javadoc(type: Javadoc, dependsOn: dokka) {
+
+        }
+    }
+}
+
+// This generates javadoc.jar
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+// javadoc configuration
+javadoc {
+    options{
+        encoding "UTF-8"
+        charSet 'UTF-8'
+        author true
+        version projectVersionName
+        links "http://docs.oracle.com/javase/7/docs/api"
+        title javadocName
+    }
+}
+
+// bintray configuration
+bintray {
+    user = bintrayUser
+    key = bintrayApikey
+    configurations = ['archives']
+    pkg {
+        repo = "maven"
+        name = projectArtifactId
+        desc = projectDescription
+        websiteUrl = projectSiteUrl
+        vcsUrl = projectGitUrl
+        issueTrackerUrl = projectIssueTracker
+        licenses = ["Apache-2.0"]
+        publish = true
+        version {
+            name = projectVersionName
+        }
+    }
+}

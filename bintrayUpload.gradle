@@ -61,9 +61,12 @@ def bintrayUser = ''
 def bintrayApikey = ''
 
 projectName = project.findProperty(PROJECT_NAME) ?: rootProject.findProperty(PROJECT_NAME) ?: project.name
-projectGroupId = project.findProperty(PROJECT_GROUP_ID) ?: rootProject.findProperty(projectGroupId)
+projectGroupId = project.findProperty(PROJECT_GROUP_ID) ?: rootProject.findProperty(PROJECT_GROUP_ID)
 projectArtifactId = project.findProperty(PROJECT_ARTIFACT_ID) ?: rootProject.findProperty(PROJECT_ARTIFACT_ID) ?: project.name
-projectVersionName = project.findProperty(PROJECT_VERSION_NAME) ?: rootProject.findProperty(PROJECT_VERSION_NAME) ?: android.defaultConfig.versionName
+projectVersionName = project.findProperty(PROJECT_VERSION_NAME) ?: rootProject.findProperty(PROJECT_VERSION_NAME)
+if (projectVersionName == null && isAndroidLibrary) {
+    projectVersionName = android.defaultConfig.versionName
+}
 javadocName = project.findProperty(PROJECT_JAVA_DOC_NAME) ?: rootProject.findProperty(PROJECT_JAVA_DOC_NAME) ?: properties.getProperty(PROJECT_JAVA_DOC_NAME) ?: project.name
 
 projectDescription = project.findProperty(PROJECT_DESCRIPTION) ?: rootProject.findProperty(PROJECT_DESCRIPTION) ?: properties.getProperty(PROJECT_DESCRIPTION)
